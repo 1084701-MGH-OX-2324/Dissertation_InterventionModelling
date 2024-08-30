@@ -30,63 +30,56 @@
   
   ### SEIR Model Function
   disease_int <- function(t, Y, parameters) {
-    with(as.list(c(Y, parameters)), {
-      # Extract compartment values
-      S <- Y[Sindex]
-      E <- Y[Eindex]
-      C <- Y[Cindex]
-      H <- Y[Hindex]
-      A <- Y[Aindex]
-      R <- Y[Rindex]
-      D <- Y[Dindex]
-      
-      # Calculate total population
-      P <- S + E + C + R + H + A
-      
-      # Combine contact matrices
-      contacts <- contact_home + contact_other + contact_school + contact_work
-      
-      # Lockdown logic
-      if (sum(H) >= hospital_beds_threshold && lock == 0) {
-        lock <<- 1
-        lockdown_start <<- t + lockdown_lag
-      } else if (t >= (lockdown_start + lockdown_duration)) {
-        lockdown_start <<- 10^8
-        lock <<- 0
-      }
-      
-      # Calculate lockdown effect
-      lockdown <- ifelse(t >= lockdown_start & t < (lockdown_start + lockdown_duration),
-                         (1 - lockdown_effect), 1)
-      
-      # Shielding logic
-      shielding <- ifelse(t >= shielding_start & t < (shielding_start + shielding_duration),
-                          1 - (shielding_effect * shielding_effect_age),
-                          rep(1, 21))
-      
-      # Force of infection
-      lam <- p * lockdown * (contacts %*% (shielding * (rhoa * A + rho * E + C + rhoh * H) / P))
-      
-      # Differential equations
-      dSdt <- -S * lam + tau * R + ageing %*% S
-      dEdt <- S * lam - gamma * E + ageing %*% E
-      dCdt <- ageing %*% C + gamma * pc * (1 - ihr) * E - C * nuc
-      dHdt <- ageing %*% H + gamma * ihr * E - H * nuh
-      dAdt <- ageing %*% A + (1 - pc) * (1 - ihr) * gamma * E - nua * A
-      dDdt <- ageing %*% D + nuc * cfr * C + nuh * hfr * H
-      dRdt <- ageing %*% R + nua * A + (1 - cfr) * nuc * C + nuh * H * (1 - hfr) - tau * R
-      
-      # End lockdown after one year
-      if (t >= 365) {
-        lockdown_start <<- 10^8
-        lock <<- 0
-      }
-      
-      # Return the rate of change
-      list(c(dSdt, dEdt, dCdt, dHdt, dAdt, dRdt, dDdt))
-    })
+    with(as.list(c(Y, parameters)),
+         { # Index for each age group
+           S <- Y[Sindex]
+           E <- Y[Eindex]
+           C <- Y[Cindex]
+           H <- Y[Hindex]
+           A <- Y[Aindex]
+           R <- Y[Rindex]
+           D <- Y[Dindex]
+           
+           contacts <- contact_home + contact_other + contact_school + contact_work
+           P <- (S + E + C + R + H + A)
+           
+           
+           #force of infection
+           lam <- p * contacts %*% ((rhoa * A + rho * E + C + rhoh * H) / P)
+           
+           #average force of infection over all age groups - used to calculate the integral of force of infection
+           lamda_avg <- mean(lam * sum(popstruc))
+           #print(lamda_avg)
+           lambda_list <<- append(lambda_list, lamda_avg)
+           # print(dim(lam))
+           
+           
+           
+           ### ODE - System
+           dSdt <- -S * lam + tau * R + ageing %*% S
+           dEdt <- S * lam - gamma * E + ageing %*% E
+           
+           
+           dCdt <- ageing %*% C + gamma * pc * (1-ihr) * E - C * nuc
+           
+           dHdt <- ageing %*% H + gamma * ihr * E - H * nuh
+           
+           dAdt <- ageing %*% A + (1-pc)*(1-ihr) * gamma * E - nua*A
+           
+           
+           dDdt <- ageing %*% D + nuc * cfr * C + nuh * hfr * H
+           
+           
+           dRdt <- ageing %*% R + nua * A + (1-cfr) * nuc * C  + nuh * H * (1-hfr) - tau*R
+           
+           
+           
+           
+           # return values per time step t
+           list(c(dSdt, dEdt, dCdt, dHdt, dAdt, dRdt, dDdt))
+         }
+    )
   }
-  
   # Years of Life Lost (YLL) Calculation Function
   yll <- function(scenario, country) {
     # Load life expectancy data
@@ -133,6 +126,9 @@
  
   results_summary <- list()
   working_directory <- getwd()
+  disease <- "Influenza"
+  country <- "United Kingdom"
+  intervention <- "None"
   
   ##read in master file
   #this is the big difference, its only ran for one simulation run
@@ -337,28 +333,9 @@
     
     #### asymptomatic infections
     rhoa = run[case,]$rhoa, #relative infectiousness*contacts of asymtomatic
-    nua = run[case,]$nua,    #recovery after asymptomatc infection
+    nua = run[case,]$nua    #recovery after asymptomatc infection
+  
     
-    
-    # D-compartment
-    report = run[case,]$report,          # proportion of all infections that are reported
-    
-    #Interventions
-    #lockdown_start = run[case,]$`Lockdown Start`,
-    lockdown_duration = run[case,]$`Lockdown Duration`,
-    #lockdown_effect = run[case,]$`Lockdown Effect`,
-    lockdown_effect = 0,
-    #lock = run[case,]$`Lock`,
-    #lockdown_end = run[case,]$`Lockdown End`,
-    
-    #shielding effect is proportional to the age,the higher the age, 
-    #the more the shielding (beschuetyzen bestimmter gruppen)
-    #shielding_effect <- seq(0, 100, by = 5) 
-    shielding_start = run[case,]$`Shielding Start`,
-    #shielding_start = 60,
-    shielding_duration = 365,
-    shielding_effect = run[case,]$`Shielding Effect`
-    #shielding_effect = 0.1
   )
   
   out <- ode(y = Y, times = times, func = disease_int, parms =   parameters, method = euler)
