@@ -21,8 +21,7 @@ library(reshape2)
 ### SEIR Model Function
 disease_int <- function(t, Y, parameters) {
   with(as.list(c(Y, parameters)),
-       {
-         # Extract compartment values
+       { # Index for each age group
          S <- Y[Sindex]
          E <- Y[Eindex]
          C <- Y[Cindex]
@@ -31,57 +30,42 @@ disease_int <- function(t, Y, parameters) {
          R <- Y[Rindex]
          D <- Y[Dindex]
          
-         # Combine contact matrices
          contacts <- contact_home + contact_other + contact_school + contact_work
-         
-         # Calculate total population
          P <- (S + E + C + R + H + A)
          
-         # Lockdown logic
-         if (sum(H) >= hospital_beds_threshold) {
-           if (lock == 0) {
-             lock <<- 1
-             lockdown_start <<- t + lockdown_lag
-             print("hi")
-           }
-         } else {
-           if (t >= (lockdown_start + lockdown_duration)) {
-             lockdown_start <<- 10^8
-             lock <<- 0
-           }
-         }
          
-         # Calculate lockdown effect
-         lockdown <- ifelse(t >= lockdown_start & t < (lockdown_start + lockdown_duration),
-                            (1-lockdown_effect), 1)
+         #force of infection
+         lam <- p * contacts %*% ((rhoa * A + rho * E + C + rhoh * H) / P)
          
-         # Shielding logic
-         if (t >= shielding_start & t < (shielding_start+shielding_duration)){
-           shielding <- 1 - (shielding_effect * shielding_effect_age)
-         } else {
-           shielding <- rep(1,21)
-         }
+         #average force of infection over all age groups - used to calculate the integral of force of infection
+         lamda_avg <- mean(lam * sum(popstruc))
+         #print(lamda_avg)
+         lambda_list <<- append(lambda_list, lamda_avg)
+         # print(dim(lam))
          
-         # Force of infection
-         lam <- p * lockdown *
-           contacts %*% (shielding * (rhoa * A + rho * E + C + rhoh *H) / P)
          
-         # Differential equations
+         
+         ### ODE - System
          dSdt <- -S * lam + tau * R + ageing %*% S
          dEdt <- S * lam - gamma * E + ageing %*% E
+         
+         
          dCdt <- ageing %*% C + gamma * pc * (1-ihr) * E - C * nuc
+         
          dHdt <- ageing %*% H + gamma * ihr * E - H * nuh
+         
          dAdt <- ageing %*% A + (1-pc)*(1-ihr) * gamma * E - nua*A
+         
+         
          dDdt <- ageing %*% D + nuc * cfr * C + nuh * hfr * H
+         
+         
          dRdt <- ageing %*% R + nua * A + (1-cfr) * nuc * C  + nuh * H * (1-hfr) - tau*R
          
-         # End lockdown after one year
-         if (t >= 365) {
-           lockdown_start <<- 10^8
-           lock <<- 0
-         }
          
-         # Return the rate of change
+         
+         
+         # return values per time step t
          list(c(dSdt, dEdt, dCdt, dHdt, dAdt, dRdt, dDdt))
        }
   )
@@ -117,6 +101,9 @@ barplot_ages <- function(data, metric, disease, country){
 #START
 
 file <- "SARS_CoV-2-FinalParams.xlsx"
+disease <- "SARS-CoV-2"
+country <- "United Kingdom"
+intervention <- "None"
 results_summary <- list()
 working_directory <- getwd()
 
@@ -301,17 +288,10 @@ parameters <- c(
   
   # Asymptomatic infections
   rhoa = run[case,]$rhoa, # Relative infectiousness*contacts of asymptomatic
-  nua = run[case,]$nua,    # Recovery after asymptomatic infection
+  nua = run[case,]$nua    # Recovery after asymptomatic infection
   
-  # D-compartment
-  report = run[case,]$report,          # Proportion of all infections that are reported
   
-  # Interventions
-  lockdown_duration = run[case,]$`Lockdown Duration`,
-  lockdown_effect = 0,
-  shielding_start = run[case,]$`Shielding Start`,
-  shielding_duration = 365,
-  shielding_effect = run[case,]$`Shielding Effect`
+ 
 )
 
 out <- ode(y = Y, times = times, func = disease_int, parms = parameters, method = euler)
