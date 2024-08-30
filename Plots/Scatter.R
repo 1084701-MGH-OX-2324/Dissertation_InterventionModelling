@@ -59,29 +59,35 @@
   
   
   
-  #filter results for the lockdown scenarios
+  # Filter results for the lockdown scenarios
   average_lock <- filtered_data %>%
     filter(`Lockdown Efficacy` != 0) %>%
-    group_by(Country, `Disease (age curve)`,`Lockdown Adherence`, `Lockdown Efficacy`, `Lockdown.Effect`) %>%
+    group_by(Country, `Disease (age curve)`, `Lockdown Adherence`, `Lockdown Efficacy`, `Lockdown.Effect`) %>%
     summarise(
       Avg_Deaths = round(mean((Total.Deaths / Population) * 100000, na.rm = TRUE), 0),
       SE_Deaths = standard_error((Total.Deaths / Population) * 100000),
       LockIntegralAvg = mean(LockIntegral, na.rm = TRUE),
-      Avg_YLL = round(mean((YLL/Total.Deaths), na.rm = TRUE),0),
-      SE_YLL = standard_error(YLL/Total.Deaths)) %>%
+      Avg_YLL = round(mean((YLL / Total.Deaths), na.rm = TRUE), 0),
+      SE_YLL = standard_error(YLL / Total.Deaths),
+      CI_YLL_Lower = Avg_YLL - 1.96 * SE_YLL,
+      CI_YLL_Upper = Avg_YLL + 1.96 * SE_YLL
+    ) %>%
     ungroup() %>%
     mutate(Intervention = "Lockdown")
   
-  #filter results for the shielding scenarios
+  # Filter results for the shielding scenarios
   average_shielding <- filtered_data %>%
     filter(`Shielding Efficacy` != 0) %>%
     group_by(Country, `Disease (age curve)`, `Shielding Adherence`, `Shielding Efficacy`, `Shielding.Effect`) %>%
     summarise(
-      Avg_Deaths = round(mean((Total.Deaths / Population) * 100000, na.rm = TRUE),0),
+      Avg_Deaths = round(mean((Total.Deaths / Population) * 100000, na.rm = TRUE), 0),
       SE_Deaths = standard_error((Total.Deaths / Population) * 100000),
       ShielIntegralAvg = mean(ShieldingIntegral, na.rm = TRUE),
-      Avg_YLL = round(mean((YLL/Total.Deaths), na.rm = TRUE),0),
-      SE_YLL = standard_error(YLL/Total.Deaths)) %>%
+      Avg_YLL = round(mean((YLL / Total.Deaths), na.rm = TRUE), 0),
+      SE_YLL = standard_error(YLL / Total.Deaths),
+      CI_YLL_Lower = Avg_YLL - 1.96 * SE_YLL,
+      CI_YLL_Upper = Avg_YLL + 1.96 * SE_YLL
+    ) %>%
     ungroup() %>%
     mutate(Intervention = "Shielding")
   

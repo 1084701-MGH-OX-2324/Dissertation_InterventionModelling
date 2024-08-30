@@ -62,28 +62,38 @@ merged_data <- merged_data %>%
   
   average_lock <- filtered_data %>%
     filter(`Lockdown Efficacy` != 0) %>%
-    group_by(Country, `Disease (age curve)`,`Lockdown Adherence`, `Lockdown Efficacy`, `Lockdown.Effect`) %>%
+    group_by(Country, `Disease (age curve)`, `Lockdown Adherence`, `Lockdown Efficacy`, `Lockdown.Effect`) %>%
     summarise(
       Avg_Deaths = round(mean((Total.Deaths / Population) * 100000, na.rm = TRUE), 0),
       SE_Deaths = standard_error((Total.Deaths / Population) * 100000),
+      CI_Lower = Avg_Deaths - 1.96 * SE_Deaths,
+      CI_Upper = Avg_Deaths + 1.96 * SE_Deaths,
       IntegralAvg = mean(LockIntegral, na.rm = TRUE),
-      SE_Integral = standard_error(LockIntegral)) %>%
+      SE_Integral = standard_error(LockIntegral),
+      CI_Integral_Lower = IntegralAvg - 1.96 * SE_Integral,
+      CI_Integral_Upper = IntegralAvg + 1.96 * SE_Integral
+    ) %>%
     ungroup() %>%
     mutate(Intervention = "Lockdown")
   
-  #filter results for the shielding scenarios
-  
+  # Filter results for the shielding scenarios
   average_shielding <- filtered_data %>%
-    filter(`Shielding Efficacy`!= 0) %>%
+    filter(`Shielding Efficacy` != 0) %>%
     group_by(Country, `Disease (age curve)`, `Shielding Adherence`, `Shielding Efficacy`, `Shielding.Effect`) %>%
     summarise(
-      Avg_Deaths = round(mean((Total.Deaths / Population) * 100000, na.rm = TRUE),0),
+      Avg_Deaths = round(mean((Total.Deaths / Population) * 100000, na.rm = TRUE), 0),
       SE_Deaths = standard_error((Total.Deaths / Population) * 100000),
+      CI_Lower = Avg_Deaths - 1.96 * SE_Deaths,
+      CI_Upper = Avg_Deaths + 1.96 * SE_Deaths,
       IntegralAvg = mean(ShieldingIntegral, na.rm = TRUE),
-      SE_Integral = standard_error(ShieldingIntegral)) %>%
+      SE_Integral = standard_error(ShieldingIntegral),
+      CI_Integral_Lower = IntegralAvg - 1.96 * SE_Integral,
+      CI_Integral_Upper = IntegralAvg + 1.96 * SE_Integral
+    ) %>%
     ungroup() %>%
     mutate(Intervention = "Shielding")
   
+
   
   
   
