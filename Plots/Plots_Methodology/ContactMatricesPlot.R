@@ -156,3 +156,37 @@ demo <- ggdraw() +
 main_plot <- grid.arrange(demo, mat, nrow=2)
 
 ggsave(filename = "Demog.png", plot = main_plot, width = 35, height = 30, units = "cm", dpi = 600)
+
+
+#calculate proportions
+
+calculate_proportions <- function(df) {
+  total_population <- sum(df$pop)
+  
+  # Calculate the proportion of the population under 18
+  under_18_population <- sum(df$pop[df$ages < 18])
+  proportion_under_18 <- under_18_population / total_population
+  
+  # Calculate the proportion of the population over 65
+  over_65_population <- sum(df$pop[df$ages >= 65])
+  proportion_over_65 <- over_65_population / total_population
+  
+  return(data.frame(
+    proportion_under_18 = proportion_under_18,
+    proportion_over_65 = proportion_over_65
+  ))
+}
+
+sa_proportions <- calculate_proportions(sa_pop)
+uk_proportions <- calculate_proportions(uk_pop)
+bo_proportions <- calculate_proportions(bo_pop)
+
+# Print the results
+print("South Africa:")
+print(sa_proportions)
+
+print("United Kingdom:")
+print(uk_proportions)
+
+print("Bolivia:")
+print(bo_proportions)
