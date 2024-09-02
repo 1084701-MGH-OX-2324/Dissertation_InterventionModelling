@@ -94,10 +94,10 @@ average_lock <- filtered_data %>%
     Avg_Person.Days.Covered.Lockdown = mean(Person.Days.Covered.Lockdown),
     Avg_Hosp = mean((Total.Hosp / Population) * 100000, na.rm = TRUE),
     SE_Hosp = standard_error((Total.Hosp / Population) * 100000),
-    Avg_Infec =mean((Total.Infections / Population), na.rm = TRUE),
-    SE_Infec = standard_error(Total.Infections / Population),
-    IFR = mean(Total.Deaths/Total.Infections, na.rm = TRUE),
-    SE_IFR = standard_error(Total.Deaths/Total.Infections)
+    Avg_Infec =mean((Total.Infections / Population)*100, na.rm = TRUE),
+    SE_Infec = standard_error((Total.Infections / Population)*100),
+    IFR = mean((Total.Deaths/Total.Infections)*100, na.rm = TRUE),
+    SE_IFR = standard_error((Total.Deaths/Total.Infections)*100)
   ) %>%
   ungroup() %>%
   mutate(Intervention = "Lockdown")
@@ -114,10 +114,10 @@ average_shielding <- filtered_data %>%
     Avg_Person.Days.Covered.Shielding = mean(Person.Days.Covered.Lockdown),
     Avg_Hosp = mean((Total.Hosp / Population) * 100000, na.rm = TRUE),
     SE_Hosp = standard_error((Total.Hosp / Population) * 100000),
-    Avg_Infec =mean((Total.Infections / Population), na.rm = TRUE),
-    SE_Infec = standard_error(Total.Infections / Population),
-    IFR = mean(Total.Deaths/Total.Infections, na.rm = TRUE),
-    SE_IFR = standard_error(Total.Deaths/Total.Infections)
+    Avg_Infec =mean((Total.Infections / Population)*100, na.rm = TRUE),
+    SE_Infec = standard_error((Total.Infections / Population)*100),
+    IFR = mean((Total.Deaths/Total.Infections)*100, na.rm = TRUE),
+    SE_IFR = standard_error((Total.Deaths/Total.Infections)*100)
   ) %>%
   ungroup() %>%
   mutate(Intervention = "Shielding")
@@ -198,9 +198,9 @@ alluvial_data <- average_deaths_averted %>%
             SE_YLL = SE_YLL,
             Avg_Hosp = round(mean(Avg_Hosp), 0),
             SE_Hosp = SE_Hosp,
-            Avg_Infec = round(mean(Avg_Infec), 3),
+            Avg_Infec = round(mean(Avg_Infec), 1),
             SE_Infec = SE_Infec,
-            IFR = 100* round(mean(IFR),5),
+            IFR = round(mean(IFR),3),
             SE_IFR = SE_IFR,
             Avg_Deaths_Averted = round(mean(Deaths_Averted),0),
             SE_Deaths_Averted = SE_Deaths_Averted) %>%
@@ -261,7 +261,7 @@ p2 <- ggplot(alluvial_data_flu, aes(axis1 = Avg_Deaths, axis2 = Avg_YLL, axis3 =
   geom_alluvium(width = 1/12) +
   geom_stratum(width = 1/12, fill = "white", color = "white") +
   geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 4.5, nudge_x = 0, color = "black") +
-  scale_x_discrete(limits = c("Total Deaths \n per 100000", "Years-Life-Lost \n per Death", "Total Hospitalizations \n per 100000", "Infection-Fatality-Ratio \n (%)", "Final Epidemic \n Size", "Total Deaths Averted \n per 100000"), expand = c(0.15, 0.05)) +
+  scale_x_discrete(limits = c("Total Deaths \n per 100000", "Years-Life-Lost \n per Death", "Total Hospitalisations \n per 100000", "Infection-Fatality-Ratio \n (%)", "Final Epidemic \n Size (%)", "Total Deaths Averted \n per 100000"), expand = c(0.15, 0.05)) +
   scale_fill_manual(values = fill_colors, na.translate = FALSE) +  
   scale_color_viridis_b() +
   theme_minimal() +
@@ -291,7 +291,7 @@ p3 <- ggplot(alluvial_data_cov, aes(axis1 = Avg_Deaths, axis2 = Avg_YLL, axis3 =
   geom_alluvium(width = 1/12) +
   geom_stratum(width = 1/12, fill = "white", color = "white") +
   geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 4.5, nudge_x = 0, color = "black") +  # Increased size from 3 to 4.5
-  scale_x_discrete(limits = c("Total Deaths \n per 100000", "Years-Life-Lost \n per Death", "Total Hospitalizations \n per 100000", "Infection-Fatality-Ratio \n (%)", "Final Epidemic \n Size", "Total Deaths Averted \n per 100000"), expand = c(0.15, 0.05)) +
+  scale_x_discrete(limits = c("Total Deaths \n per 100000", "Years-Life-Lost \n per Death", "Total Hospitalisations \n per 100000", "Infection-Fatality-Ratio \n (%)", "Final Epidemic \n Size (%)", "Total Deaths Averted \n per 100000"), expand = c(0.15, 0.05)) +
   scale_fill_manual(values = fill_colors, na.translate = FALSE) + 
   scale_color_viridis_b() +
   theme_minimal() +
@@ -324,7 +324,7 @@ print(p3)
 
 
 
-#ggsave(filename = "AlluvialCov.png", plot = p3, width = 25, height = 40, units = "cm", dpi = 600)
+ggsave(filename = "AlluvialCov.png", plot = p3, width = 25, height = 40, units = "cm", dpi = 600)
 #ggsave(filename = "AlluvialInf.png", plot = p2, width = 25, height = 40, units = "cm", dpi = 600)
 
 
@@ -479,4 +479,36 @@ table_deaths_averted <- kable(rank_deaths_averted, format = "latex", booktabs = 
 table_deaths_averted
 
 
+death_deltas <- average_deaths %>%
+  filter(Intervention %in% c("Lockdown", "Shielding")) %>%
+  select(Country, `Disease (age curve)`, Intervention, Avg_Deaths) %>%
+  spread(Intervention, Avg_Deaths) %>%
+  mutate(Delta_Deaths = abs(Lockdown - Shielding))
 
+min_delta <- death_deltas %>%
+  arrange(Delta_Deaths) %>%
+  slice(1)  # Gets the row with the smallest delta
+
+min_delta
+
+
+## barplot differences in deaths
+# Plot using ggplot2
+ggplot(death_deltas, aes(x = Country, y = Delta_Deaths, fill = `Disease (age curve)`)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7, color = "black") +
+  labs(
+    x = NULL,
+    y = "Difference in Deaths per 100,000 Population"
+  ) +
+  scale_fill_manual(values = c("Influenza-like" = "#fc8660", "SARS-CoV-2-like" = "#9ecae1")) +
+  theme_minimal(base_size = 15) +
+  theme(
+    axis.text.x = element_text(angle = 0, hjust = 1, size = 12, color = "black"),
+    axis.text.y = element_text(size = 12, color = "black"),
+    axis.title.y = element_text(size = 14),
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 12),
+    panel.grid.major = element_line(color = "grey80"),
+    panel.grid.minor = element_blank()
+  )
