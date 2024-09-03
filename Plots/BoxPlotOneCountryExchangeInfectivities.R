@@ -6,6 +6,7 @@ library(gridExtra)
 library(grid)
 library(ggplot2)
 library(lattice)
+library(ggsci)
 
 
 
@@ -130,124 +131,137 @@ results.df.ft_filter_flu <- results.df.ft_filter_flu %>%
 
 custom_colors <- c("Lockdown" = "#aec7e8", "None" = "#98df8a", "Shielding" =  "#ffbb78")  # Replace with your actual color codes and intervention names
 
-library(ggsci)
+#filter for influenza-like diseases
+
 rhoa_flu <- ggplot(data = results.df.ft_filter_flu, aes(x = rhoa, y = Scaled.Deaths, fill = Intervention)) +
   geom_boxplot(outlier.shape = NA) +
   labs(x = "Relative Asymptomatic \n Infectivity", 
        y = "Average Deaths per 100000 Population") +
-  facet_grid(~`Disease Type:`, labeller = label_both, drop = TRUE) +
+  facet_grid(~`Disease (age curve)`, labeller = label_value, drop = TRUE) +  
   coord_flip() + 
-  theme(axis.text.x = element_text(size = 12),    
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 13),    
         axis.title.x = element_blank(),  
-        axis.text.y = element_text(size = 10),    
-        axis.title.y = element_text(size = 12),           
-        legend.position = "none") +
+        axis.text.y = element_text(size = 13),    
+        axis.title.y = element_text(size = 13),           
+        legend.position = "none",
+        strip.text = element_text(size = 13)) +
   scale_fill_manual(values = custom_colors)
-
-rhoa_flu
 
 pc_flu <- ggplot(data = results.df.ft_filter_flu, aes(x = pc, y = Total.Deaths, fill = Intervention)) +
   geom_boxplot(outlier.shape = NA) +
   labs(x = "Rate of Duration of Infection \n Asymptomatic Individuals", 
        y = "Average Deaths per 100000 Population") +
-  facet_grid(~`Disease Type:`, labeller = label_both, drop = TRUE) +
+  facet_grid(~`Disease (age curve)`, labeller = label_value, drop = TRUE) +  
   coord_flip() + 
-  theme(axis.text.x = element_text(size = 12),    
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 13),    
         axis.title.x = element_blank(),   
-        axis.text.y = element_text(size = 10),    
-        axis.title.y = element_text(size = 12),            
-        legend.position = "none") +
+        axis.text.y = element_text(size = 13),    
+        axis.title.y = element_text(size = 13),            
+        legend.position = "none",
+        strip.text = element_text(size = 13)) +
   scale_fill_manual(values = custom_colors)
-
 
 gamma_flu <- ggplot(data = results.df.ft_filter_flu, aes(x = gamma, y = Scaled.Deaths, fill = Intervention)) +
   geom_boxplot(outlier.shape = NA) +
+  theme_minimal() +
   labs(x = "Rate of Duration of Infection \n Symptomatic Individuals", 
        y = "Average Deaths per 100000 Population") +
-  facet_grid(~`Disease Type:`, labeller = label_both, drop = TRUE) +
+  facet_grid(~`Disease (age curve)`, labeller = label_value, drop = TRUE) +  
   coord_flip() + 
-  theme(axis.text.x = element_text(size = 12),    # Display x-axis text (which corresponds to `nuc`)
-        axis.title.x = element_blank(),   # Display x-axis title
-        axis.text.y = element_text(size = 10),    # Display x-axis text (which corresponds to `nuc`)
-        axis.title.y = element_text(size = 12),            # Remove y-axis text (which is now irrelevant)
-        legend.position = "none") +
+  theme(axis.text.x = element_text(size = 13),    
+        axis.title.x = element_blank(),   
+        axis.text.y = element_text(size = 13),    
+        axis.title.y = element_text(size = 13),            
+        legend.position = "none",
+        strip.text = element_text(size = 13)) +
   scale_fill_manual(values = custom_colors)
-
 
 rho_flu <- ggplot(data = results.df.ft_filter_flu, aes(x = rho, y = Scaled.Deaths, fill = Intervention)) +
   geom_boxplot(outlier.shape = NA) +
   labs(x = "Relative Presymptomatic \n Infectivity", 
        y = "Average Deaths per 100000 Population") +
-  facet_grid(~`Disease Type:`, labeller = label_both, drop = TRUE) +
+  facet_grid(~`Disease (age curve)`, labeller = label_value, drop = TRUE) +  
   coord_flip() +
-  theme(axis.text.x = element_text(size = 12),    
-        axis.text.y = element_text(size = 10),    
-        axis.title.y = element_text(size = 12),            
-        legend.position = "bottom") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 13),    
+        axis.text.y = element_text(size = 13),    
+        axis.title.y = element_text(size = 13),            
+        legend.position = "bottom",
+        strip.text = element_text(size = 13)) +
   scale_fill_manual(values = custom_colors)
 
-
 flu <- grid.arrange(rhoa_flu, rho_flu, nrow = 2)
+
 
 ## covid
 results.df.ft_filter_cov <- results.df.ft %>%
   filter(`Disease (age curve)`!= "Influenza")
 
 results.df.ft_filter_cov <- results.df.ft_filter_cov %>%
-  rename(`Disease Type:` = `Disease (age curve)`)
-
+  mutate(`Disease (age curve)` = ifelse(`Disease (age curve)` == "SARS-CoV-2", 
+                                        "SARS-CoV-2-like Disease", 
+                                        `Disease (age curve)`))
 
 rhoa_cov <- ggplot(data = results.df.ft_filter_cov, aes(x = rhoa, y = Scaled.Deaths, fill = Intervention)) +
   geom_boxplot(outlier.shape = NA) +
   labs(x = "Relative Asymptomatic \n Infectivity", 
        y = "Average Deaths per 100000 Population") +
-  facet_grid(~`Disease Type:`, labeller = label_both, drop = TRUE) +
+  facet_grid(~`Disease (age curve)`, labeller = label_value, drop = TRUE) +  
   coord_flip() + 
-  theme(axis.text.x = element_text(size = 12),    
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 13),    
         axis.title.x = element_blank(),  
-        axis.text.y = element_text(size = 10),    
-        axis.title.y = element_text(size = 12),           
-        legend.position = "none") +
+        axis.text.y = element_text(size = 13),    
+        axis.title.y = element_text(size = 13),           
+        legend.position = "none",
+        strip.text = element_text(size = 13)) +
   scale_fill_manual(values = custom_colors)
 
 pc_cov <- ggplot(data = results.df.ft_filter_cov, aes(x = pc, y = Scaled.Deaths, fill = Intervention)) +
   geom_boxplot(outlier.shape = NA) +
   labs(x = "Rate of Duration of Infection \n Asymptomatic Individuals", 
        y = "Average Deaths per 100000 Population") +
-  facet_grid(~`Disease Type:`, labeller = label_both, drop = TRUE) +
+  facet_grid(~`Disease (age curve)`, labeller = label_value, drop = TRUE) +  
   coord_flip() + 
-  theme(axis.text.x = element_text(size = 12),    
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 13),    
         axis.title.x = element_blank(),   
-        axis.text.y = element_text(size = 10),    
-        axis.title.y = element_text(size = 12),            
-        legend.position = "none") +
+        axis.text.y = element_text(size = 13),    
+        axis.title.y = element_text(size = 13),            
+        legend.position = "none",
+        strip.text = element_text(size = 13)) +
   scale_fill_manual(values = custom_colors)
 
 gamma_cov <- ggplot(data = results.df.ft_filter_cov, aes(x = gamma, y = Scaled.Deaths, fill = Intervention)) +
   geom_boxplot(outlier.shape = NA) +
   labs(x = "Rate of Duration of Incubation Period", 
        y = "Average Deaths per 100000 Population") +
-  facet_grid(~`Disease Type:`, labeller = label_both, drop = TRUE) +
+  facet_grid(~`Disease (age curve)`, labeller = label_value, drop = TRUE) +  
   coord_flip() + 
-  theme(axis.text.x = element_text(size = 12),    
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 13),    
         axis.title.x = element_blank(),   
-        axis.text.y = element_text(size = 10),    
-        axis.title.y = element_text(size = 12),            
-        legend.position = "none") +
+        axis.text.y = element_text(size = 13),    
+        axis.title.y = element_text(size = 13),            
+        legend.position = "none",
+        strip.text = element_text(size = 13)) +
   scale_fill_manual(values = custom_colors)
 
 rho_cov <- ggplot(data = results.df.ft_filter_cov, aes(x = rho, y = Scaled.Deaths, fill = Intervention)) +
   geom_boxplot(outlier.shape = NA) +
   labs(x = "Relative Presymptomatic \n Infectivity", 
        y = "Average Deaths per 100000 Population") +
-  facet_grid(~`Disease Type:`, labeller = label_both, drop = TRUE) +
+  facet_grid(~`Disease (age curve)`, labeller = label_value, drop = TRUE) +  
   coord_flip() +
-  theme(axis.text.x = element_text(size = 12),    
-        axis.text.y = element_text(size = 10),    
-        axis.title.y = element_text(size = 12),            
-        legend.position = "bottom") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 13),    
+        axis.text.y = element_text(size = 13),    
+        axis.title.y = element_text(size = 13),            
+        legend.position = "bottom",
+        strip.text = element_text(size = 13)) +
   scale_fill_manual(values = custom_colors)
-
 
 cov <- grid.arrange(rhoa_cov, rho_cov, nrow = 2)
 
@@ -270,8 +284,5 @@ main_plot<- grid.arrange(
 
 
 ggsave(filename = "BoxPlot.png", plot = main_plot, width = 25, height = 30, units = "cm", dpi = 600)
-
-
-
 
 
