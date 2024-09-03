@@ -528,7 +528,7 @@ ggplot(death_deltas, aes(x = Country, y = Delta_Deaths, fill = `Disease (age cur
   geom_bar(stat = "identity", position = position_dodge(width = 0.7), width = 0.7, color = "black") +
   geom_errorbar(aes(ymin = Delta_Deaths - SE_Delta, ymax = Delta_Deaths + SE_Delta),
                 position = position_dodge(width = 0.7), width = 0.25, color = "black", alpha = 0.5) +
-  geom_text(aes(label = round(Delta_Deaths, 1)), 
+  geom_text(aes(label = round(Delta_Deaths, 0)), 
             position = position_dodge(width = 0.7), 
             vjust = -0.5, size = 4, color = "black") +
   labs(
@@ -538,12 +538,12 @@ ggplot(death_deltas, aes(x = Country, y = Delta_Deaths, fill = `Disease (age cur
   scale_fill_manual(values = c("Influenza-like" = "#fc8660", "SARS-CoV-2-like" = "#9ecae1")) +
   theme_minimal(base_size = 15) +
   theme(
-    axis.text.x = element_text(angle = 0, hjust = 1, size = 12, color = "black"),
-    axis.text.y = element_text(size = 12, color = "black"),
+    axis.text.x = element_text(angle = 0, hjust = 1, size = 14, color = "black"),
+    axis.text.y = element_text(size = 14, color = "black"),
     axis.title.y = element_text(size = 14),
     legend.position = "top",
     legend.title = element_blank(),
-    legend.text = element_text(size = 12),
+    legend.text = element_text(size = 14),
     panel.grid.major = element_line(color = "grey80"),
     panel.grid.minor = element_blank(),
     plot.margin = margin(10, 10, 10, 10)
