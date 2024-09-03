@@ -479,23 +479,58 @@ table_deaths_averted <- kable(rank_deaths_averted, format = "latex", booktabs = 
 table_deaths_averted
 
 
+### Generating the death deltas 
+
+
+# delat in deaths
 death_deltas <- average_deaths %>%
   filter(Intervention %in% c("Lockdown", "Shielding")) %>%
   select(Country, `Disease (age curve)`, Intervention, Avg_Deaths) %>%
-  spread(Intervention, Avg_Deaths) %>%
-  mutate(Delta_Deaths = abs(Lockdown - Shielding))
+  spread(key = Intervention, value = Avg_Deaths) %>%
+  mutate(
+    Delta_Deaths = abs(Lockdown - Shielding)
+  )
 
-min_delta <- death_deltas %>%
-  arrange(Delta_Deaths) %>%
-  slice(1)  # Gets the row with the smallest delta
+#standard error
+se_deltas <- average_deaths %>%
+  filter(Intervention %in% c("Lockdown", "Shielding")) %>%
+  select(Country, `Disease (age curve)`, Intervention, SE_Deaths) %>%
+  spread(key = Intervention, value = SE_Deaths) %>%
+  rename(
+    Lockdown_SE = Lockdown,
+    Shielding_SE = Shielding
+  ) %>%
+  mutate(
+    SE_Delta = sqrt(Lockdown_SE^2 + Shielding_SE^2)
+  )
 
-min_delta
+#merge
+death_deltas <- death_deltas %>%
+  left_join(se_deltas %>% select(Country, `Disease (age curve)`, SE_Delta),
+            by = c("Country", "Disease (age curve)"))
+
+#rename disease types
+death_deltas <- death_deltas %>%
+  mutate(
+    `Disease (age curve)` = case_when(
+      `Disease (age curve)` == "Influenza" ~ "Influenza-like",
+      `Disease (age curve)` == "SARS-CoV-2" ~ "SARS-CoV-2-like",
+      TRUE ~ `Disease (age curve)`
+    )
+  )
 
 
-## barplot differences in deaths
-# Plot using ggplot2
+
+
+
+#plot with error bars
 ggplot(death_deltas, aes(x = Country, y = Delta_Deaths, fill = `Disease (age curve)`)) +
-  geom_bar(stat = "identity", position = "dodge", width = 0.7, color = "black") +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.7), width = 0.7, color = "black") +
+  geom_errorbar(aes(ymin = Delta_Deaths - SE_Delta, ymax = Delta_Deaths + SE_Delta),
+                position = position_dodge(width = 0.7), width = 0.25, color = "black", alpha = 0.5) +
+  geom_text(aes(label = round(Delta_Deaths, 1)), 
+            position = position_dodge(width = 0.7), 
+            vjust = -0.5, size = 4, color = "black") +
   labs(
     x = NULL,
     y = "Difference in Deaths per 100,000 Population"
@@ -510,5 +545,6 @@ ggplot(death_deltas, aes(x = Country, y = Delta_Deaths, fill = `Disease (age cur
     legend.title = element_blank(),
     legend.text = element_text(size = 12),
     panel.grid.major = element_line(color = "grey80"),
-    panel.grid.minor = element_blank()
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(10, 10, 10, 10)
   )
